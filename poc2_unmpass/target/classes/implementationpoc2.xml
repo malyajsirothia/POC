@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:dw="http://www.mulesoft.org/schema/mule/ee/dw" xmlns:metadata="http://www.mulesoft.org/schema/mule/metadata" xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd
+http://www.mulesoft.org/schema/mule/ee/dw http://www.mulesoft.org/schema/mule/ee/dw/current/dw.xsd">
+<spring:beans>
+	<spring:bean class="com.cg.poc2.UsernamePassword" name="unmPassObj" id="Bean" scope="singleton"></spring:bean>
+	</spring:beans>
+    <flow name="goToPOJOFlow">
+    
+        <set-variable variableName="env" value="#[message.inboundProperties.'http.uri.params'.env]" doc:name="Variable"/>
+        <dw:transform-message doc:name="Transform Message" metadata:id="3a70f833-95ba-45f7-97d7-ccfbdb0a88aa">
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+---
+{
+	emailId: payload.emailID,
+	password: payload.password,
+	userName: payload.userName
+} as :object {
+	class : "com.cg.poc2.UsernamePassword"
+}]]></dw:set-payload>
+        </dw:transform-message>
+        <flow-ref name="compareCredentialsFlow" doc:name="compareCredentialsFlow"/>
+        <logger level="INFO" doc:name="Logger"/>
+    </flow>
+    <flow name="compareCredentialsFlow">
+        <choice doc:name="Choice">
+            <when expression="#[flowVars.env== &quot;dev&quot; ]">
+                <invoke object-ref="unmPassObj" method="isDevValid" doc:name="isDevValid" name="isDevValid" methodArguments="#[payload.emailId],#[payload.userName],#[payload.password]"/>
+            </when>
+            <when expression="#[flowVars.env== &quot;test&quot; ]">
+                <invoke object-ref="unmPassObj" method="isTestValid" doc:name="isTestValid" methodArguments="#[payload.emailId], #[payload.userName], #[payload.password]" name="isTestValid"/>
+            </when>
+            <when expression="#[flowVars.env== &quot;prod&quot; ]">
+                <invoke object-ref="unmPassObj" method="isProdValid" doc:name="isProdValid" methodArguments="#[payload.emailId], #[payload.userName], #[payload.password]" name="isProdValid"/>
+            </when>
+            <otherwise>
+                <set-property propertyName="Content-Type" value="Text" doc:name="Property"/>
+                <set-payload value="URI entered is not correct" doc:name="Set Payload"/>
+            </otherwise>
+        </choice>
+        <set-payload doc:name="Set Payload" value="#[payload]"/>
+        <logger level="INFO" doc:name="Logger"/>
+    </flow>
+</mule>

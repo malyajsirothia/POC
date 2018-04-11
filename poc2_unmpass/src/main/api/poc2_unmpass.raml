@@ -1,0 +1,54 @@
+#%RAML 1.0
+title: New API
+'/login/{env}':
+  post:
+    responses:
+      '200':
+        description: Successfully Logged in
+        body:
+          application/json:
+            example: Successfully Logged in
+            default: Successfully Logged in
+            type: string
+      '400':
+        description: URI inserted not correct
+        body:
+          application/json:
+            example: URI inserted not correct
+            default: URI inserted not correct
+            type: string
+      '401':
+        description: Username or Password does not match
+        body:
+          application/json:
+            description: Username or Password does not match
+            example: Username or Password does not match
+            default: Username or Password does not match
+            type: string
+    body:
+      application/json:
+        type: object
+        properties:
+          userName:
+            required: true
+            example: malyaj
+            description: Username
+            type: string
+          password:
+            required: true
+            minLength: 6
+            maxLength: 16
+            pattern: '[a-zA-Z0-9@ _ &]{6,16}'
+            example: malyaj93
+            description: Password
+            type: string
+          emailID:
+            required: true
+            pattern: '[a-zA-Z0-9._]+@[a-zA-Z0-9]+[.][a-z]+$'
+            example: m.sirothia93@gmail.com
+            description: E-mail ID
+            type: string
+  uriParameters:
+    env:
+      example: Example
+      type: string

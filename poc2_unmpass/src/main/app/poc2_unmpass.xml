@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns:secure-property-placeholder="http://www.mulesoft.org/schema/mule/secure-property-placeholder" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:apikit="http://www.mulesoft.org/schema/mule/apikit" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:spring="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"  xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/apikit http://www.mulesoft.org/schema/mule/apikit/current/mule-apikit.xsd
+http://www.mulesoft.org/schema/mule/secure-property-placeholder http://www.mulesoft.org/schema/mule/secure-property-placeholder/current/mule-secure-property-placeholder.xsd">
+    <http:listener-config xmlns:http="http://www.mulesoft.org/schema/mule/http" name="poc2_unmpass-httpListenerConfig" host="0.0.0.0" port="8081" doc:name="HTTP Listener Configuration"/>
+    <apikit:config xmlns:apikit="http://www.mulesoft.org/schema/mule/apikit" name="poc2_unmpass-config" raml="poc2_unmpass.raml" consoleEnabled="false" doc:name="Router"/>
+    <secure-property-placeholder:config name="Secure_Property_Placeholder" encryptionAlgorithm="Blowfish" key="abcd" location="dev.properties,test.properties,prod.properties" doc:name="Secure Property Placeholder"/>
+    <flow name="poc2_unmpass-main">
+        <http:listener xmlns:http="http://www.mulesoft.org/schema/mule/http" config-ref="poc2_unmpass-httpListenerConfig" path="/api/*" doc:name="HTTP"/>
+        <apikit:router xmlns:apikit="http://www.mulesoft.org/schema/mule/apikit" config-ref="poc2_unmpass-config" doc:name="APIkit Router"/>
+        <exception-strategy ref="poc2_unmpass-apiKitGlobalExceptionMapping" doc:name="Reference Exception Strategy"/>
+    </flow>
+
+    <flow name="post:/login/{env}:application/json:poc2_unmpass-config">
+        <flow-ref name="goToPOJOFlow" doc:name="goToPOJOFlow"/>
+
+    </flow>
+    <apikit:mapping-exception-strategy xmlns:apikit="http://www.mulesoft.org/schema/mule/apikit" name="poc2_unmpass-apiKitGlobalExceptionMapping">
+        <apikit:mapping statusCode="404">
+            <apikit:exception value="org.mule.module.apikit.exception.NotFoundException" />
+            <set-property propertyName="Content-Type" value="application/json" doc:name="Property"/>
+            <set-payload value="{ &quot;message&quot;: &quot;Resource not found&quot; }" doc:name="Set Payload"/>
+        </apikit:mapping>
+        <apikit:mapping statusCode="405">
+            <apikit:exception value="org.mule.module.apikit.exception.MethodNotAllowedException" />
+            <set-property propertyName="Content-Type" value="application/json" doc:name="Property"/>
+            <set-payload value="{ &quot;message&quot;: &quot;Method not allowed&quot; }" doc:name="Set Payload"/>
+        </apikit:mapping>
+        <apikit:mapping statusCode="415">
+            <apikit:exception value="org.mule.module.apikit.exception.UnsupportedMediaTypeException" />
+            <set-property propertyName="Content-Type" value="application/json" doc:name="Property"/>
+            <set-payload value="{ &quot;message&quot;: &quot;Unsupported media type&quot; }" doc:name="Set Payload"/>
+        </apikit:mapping>
+        <apikit:mapping statusCode="406">
+            <apikit:exception value="org.mule.module.apikit.exception.NotAcceptableException" />
+            <set-property propertyName="Content-Type" value="application/json" doc:name="Property"/>
+            <set-payload value="{ &quot;message&quot;: &quot;Not acceptable&quot; }" doc:name="Set Payload"/>
+        </apikit:mapping>
+        <apikit:mapping statusCode="400">
+            <apikit:exception value="org.mule.module.apikit.exception.BadRequestException" />
+            <set-property propertyName="Content-Type" value="application/json" doc:name="Property"/>
+
+            <set-payload value="{ &quot;message&quot;: &quot;Bad request&quot; }" doc:name="Set Payload"/>
+        </apikit:mapping>
+        <apikit:mapping statusCode="500">
+            <apikit:exception value="com.cg.poc2.InvalidLoginException"/>
+            <set-property propertyName="Content-Type" value="text" doc:name="Property"/>
+            <set-payload value="Username, Password and emailID does not match" doc:name="Set Payload"/>
+        </apikit:mapping>
+    </apikit:mapping-exception-strategy>
+</mule>
